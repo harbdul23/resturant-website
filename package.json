@@ -2,8 +2,9 @@
   "name": "resturant-website",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "Backend/server.js",
   "scripts": {
+    "start": "node Backend/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
