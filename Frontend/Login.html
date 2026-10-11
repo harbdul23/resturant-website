@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log in | Savora Restaurant</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="glass.css">
+</head>
+<body data-page="login">
+
+    <header class="navbar">
+        <a href="index.html" class="logo">SAVORA</a>
+        <nav class="nav-links">
+            <a href="index.html#home">Home</a>
+            <a href="menu.html">Menu</a>
+            <a href="index.html#about">About</a>
+            <a href="index.html#contact">Contact</a>
+        </nav>
+        <div class="nav-actions">
+            <a href="login.html" id="auth-link" class="auth-link">Log in</a>
+            <button class="cart-button" onclick="openCart()">🛒 Cart <span id="cart-count">0</span></button>
+        </div>
+    </header>
+
+    <main class="auth-page">
+        <section class="auth-card">
+            <div class="auth-tabs">
+                <button type="button" data-tab="register" class="active">Create account</button>
+                <button type="button" data-tab="login">Log in</button>
+            </div>
+
+            <form id="register-form" onsubmit="return register(event)">
+                <label for="reg-name">Your name</label>
+                <input id="reg-name" type="text" placeholder="e.g. Tolu Adebayo" autocomplete="name" required>
+
+                <label for="reg-phone">Phone number</label>
+                <input id="reg-phone" type="tel" placeholder="+234 801 234 5678" autocomplete="tel" required>
+                <p class="hint">We use this to reach you about your orders.</p>
+
+                <label for="reg-password">Password</label>
+                <div class="password-wrap">
+                    <input id="reg-password" type="password" autocomplete="new-password" minlength="6" required>
+                    <button type="button" class="eye">Show</button>
+                </div>
+                <p class="hint">At least 6 characters.</p>
+
+                <label for="reg-email">Email (optional)</label>
+                <input id="reg-email" type="email" placeholder="you@email.com" autocomplete="email">
+
+                <label class="agree">
+                    <input id="reg-agree" type="checkbox">
+                    <span>I agree to Savora's terms and privacy policy.</span>
+                </label>
+
+                <button class="auth-submit" type="submit">Create account</button>
+            </form>
+
+            <form id="login-form" onsubmit="return login(event)" hidden>
+                <label for="log-id">Phone number or email</label>
+                <input id="log-id" type="text" autocomplete="username" required>
+
+                <label for="log-password">Password</label>
+                <div class="password-wrap">
+                    <input id="log-password" type="password" autocomplete="current-password" required>
+                    <button type="button" class="eye">Show</button>
+                </div>
+
+                <button class="auth-submit" type="submit">Log in</button>
+            </form>
+
+            <p class="auth-error" id="auth-error" role="alert"></p>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        if (auth) location.replace("index.html");
+
+        const tabs = document.querySelectorAll(".auth-tabs button");
+
+        function switchTab(name) {
+            tabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
+            $("register-form").hidden = name !== "register";
+            $("login-form").hidden = name !== "login";
+            $("auth-error").textContent = "";
+        }
+        tabs.forEach((t) => (t.onclick = () => switchTab(t.dataset.tab)));
+
+        document.querySelectorAll(".eye").forEach((b) => {
+            b.onclick = () => {
+                const input = b.previousElementSibling;
+                input.type = input.type === "password" ? "text" : "password";
+                b.textContent = input.type === "password" ? "Show" : "Hide";
+            };
+        });
+
+        async function send(path, body) {
+            $("auth-error").textContent = "";
+            try {
+                const response = await fetch(API + path, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    $("auth-error").textContent = data.error;
+                    return;
+                }
+                write("savora_auth", data);
+                location.href = "menu.html";
+            } catch (error) {
+                $("auth-error").textContent = "Could not reach the server. Is it running?";
+            }
+        }
+
+        function register(event) {
+            event.preventDefault();
+            send("/api/auth/register", {
+                name: $("reg-name").value,
+                phone: $("reg-phone").value,
+                email: $("reg-email").value,
+                password: $("reg-password").value,
+                agreed: $("reg-agree").checked,
+            });
+            return false;
+        }
+
+        function login(event) {
+            event.preventDefault();
+            send("/api/auth/login", {
+                identifier: $("log-id").value,
+                password: $("log-password").value,
+            });
+            return false;
+        }
+    </script>
+</body>
+</html>

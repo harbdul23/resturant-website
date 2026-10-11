@@ -1,0 +1,175 @@
+/* Loads after style.css: fixes, full menu page, liquid glass */
+
+.center { text-align: center; margin-top: 50px; }
+
+.cart-button { font-size: 14px; transition: 0.3s; }
+.cart-button:hover { background: hwb(0 100% 0% / 0.2); }
+
+.food-card img, .food-emoji { width: 100%; height: 240px; object-fit: cover; }
+.food-emoji {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 72px; background: rgba(255, 255, 255, 0.05);
+}
+
+/* Full menu page */
+.page-hero { padding: 150px 8% 20px; text-align: center; }
+.page-hero h2 { font-size: 50px; margin-bottom: 15px; }
+.page-hero > p:last-of-type { color: #999; }
+.menu-page-grid { padding-top: 40px; }
+.filters { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 28px; }
+
+/* Glass buttons */
+#cart-panel button, #orders-panel button, .filter-btn {
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.25s;
+}
+#cart-panel button:hover, #orders-panel button:hover, .filter-btn:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+.filter-btn.active, #cart-panel .place-btn {
+    background: #ff9f43; border-color: #ff9f43; color: #000; font-weight: 700;
+}
+
+/* Cart and orders panels */
+#cart-overlay { z-index: 1090; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(3px); }
+#cart-panel, #orders-panel {
+    z-index: 1100;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-left: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: -12px 0 40px rgba(0, 0, 0, 0.45), inset 1px 0 0 rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+.cart-header { border-bottom: 1px solid rgba(255, 255, 255, 0.18); }
+.header-actions { display: flex; gap: 8px; }
+.cart-footer {
+    flex-direction: column; align-items: stretch; gap: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+.cart-total { display: flex; justify-content: space-between; font-size: 18px; }
+.cart-empty { color: rgba(255, 255, 255, 0.65); }
+
+#cart-panel input {
+    width: 100%; padding: 11px 14px; border-radius: 12px; font-size: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.12); color: #fff; outline: none;
+}
+#cart-panel input::placeholder { color: rgba(255, 255, 255, 0.55); }
+#cart-panel input:focus { border-color: #ff9f43; }
+
+.cart-row img, .cart-emoji { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; }
+.cart-emoji {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; background: rgba(255, 255, 255, 0.1);
+}
+.cart-info span { color: #ff9f43; }
+.cart-qty button { padding: 4px 10px; }
+.cart-remove { padding: 6px 9px; }
+
+.order-card { border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.08); }
+.order-card small { color: rgba(255, 255, 255, 0.6); }
+.order-status { background: rgba(255, 159, 67, 0.25); color: #ffc58a; }
+
+/* Contact */
+.contact-info { display: grid; gap: 12px; max-width: 520px; margin: 35px auto 25px; }
+.contact-card {
+    display: block; padding: 16px 20px; border-radius: 16px; color: #fff; text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition: 0.25s;
+}
+.contact-card:hover { background: rgba(255, 255, 255, 0.16); transform: translateY(-2px); }
+.socials { display: flex; justify-content: center; gap: 24px; }
+.socials a { color: rgba(255, 255, 255, 0.7); }
+.socials a:hover { color: #ff9f43; }
+footer a { color: #aaa; text-decoration: none; }
+
+/* Keep Home and Menu links reachable on phones */
+@media (max-width: 700px) {
+    .nav-links { display: flex; gap: 14px; }
+    .nav-links a:nth-child(n+3) { display: none; }
+    .page-hero { padding-top: 130px; }
+    .page-hero h2 { font-size: 38px; }
+}
+
+
+/* Account link and login page */
+[hidden] { display: none !important; }
+.nav-actions { display: flex; gap: 10px; align-items: center; }
+.auth-link {
+    color: #fff; text-decoration: none; font-size: 14px; white-space: nowrap;
+    padding: 10px 15px; border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    transition: 0.3s;
+}
+.auth-link:hover { background: rgba(255, 255, 255, 0.2); }
+
+.auth-page {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 130px 20px 60px;
+    background:
+        linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.8)),
+        url("https://images.unsplash.com/photo-1515003197210-e0cd71810b5f") center / cover fixed;
+}
+.auth-card {
+    width: min(440px, 100%); padding: 26px; border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.auth-tabs {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px;
+    border-radius: 999px; background: rgba(255, 255, 255, 0.08); margin-bottom: 8px;
+}
+.auth-tabs button {
+    padding: 12px; border: 0; border-radius: 999px; background: transparent;
+    color: rgba(255, 255, 255, 0.7); font-size: 15px; cursor: pointer; transition: 0.25s;
+}
+.auth-tabs button.active {
+    background: rgba(255, 255, 255, 0.22); color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.auth-card label { display: block; margin: 16px 0 8px; font-size: 14px; color: rgba(255, 255, 255, 0.85); }
+.auth-card input:not([type="checkbox"]) {
+    width: 100%; padding: 15px 18px; border-radius: 999px; font-size: 15px; outline: none;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.1); color: #fff;
+}
+.auth-card input:focus { border-color: #ff9f43; }
+.auth-card input::placeholder { color: rgba(255, 255, 255, 0.45); }
+.hint { margin-top: 8px; font-size: 13px; color: rgba(255, 255, 255, 0.6); }
+.password-wrap { position: relative; }
+.password-wrap input { padding-right: 76px !important; }
+.eye {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    padding: 7px 12px; border-radius: 999px; font-size: 13px; cursor: pointer; color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.12);
+}
+.auth-card .agree {
+    display: flex; gap: 10px; align-items: flex-start; margin-top: 18px;
+    padding: 14px 16px; border-radius: 18px; background: rgba(255, 255, 255, 0.08); font-size: 14px;
+}
+.agree input { margin-top: 3px; accent-color: #ff9f43; }
+.auth-submit {
+    width: 100%; margin-top: 20px; padding: 15px; border: 0; border-radius: 999px;
+    background: #ff9f43; color: #000; font-weight: 700; font-size: 16px; cursor: pointer;
+}
+.auth-error { min-height: 20px; margin-top: 14px; color: #ff9a9a; font-size: 14px; }
+
+@media (max-width: 700px) {
+    .auth-link, .cart-button { padding: 8px 10px; font-size: 13px; }
+}
