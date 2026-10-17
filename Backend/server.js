@@ -363,6 +363,14 @@ app.post("/api/admin/reservations/:id/status", (req, res) => {
 });
 
 
+/* PAGE NOT FOUND (must stay after every route) */
+
+app.use((req, res) => {
+    if (req.path.startsWith("/api")) return res.status(404).json({ error: "Not found" });
+    res.status(404).sendFile(path.join(__dirname, "../Frontend/404.html"));
+});
+
+
 /* START SERVER */
 
 app.listen(PORT, () => {

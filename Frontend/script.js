@@ -2,7 +2,7 @@ const API = ["5500", "5501"].includes(location.port) ? "http://localhost:5000" :
 const page = document.body.dataset.page;
 const $ = (id) => document.getElementById(id);
 const money = (n) => "₦" + Number(n).toLocaleString();
-const ICONS = { Burgers: "🍔", Pizza: "🍕", Pasta: "🍝", Main: "🍗", Salads: "🥗", Desserts: "🍰", Local: "🍲", Drinks: "🥤", Sides: "🍟" };
+const ICONS = { Burgers: "🍔", Pizza: "🍕", Pasta: "", Main: "", Salads: "", Desserts: "🍰", Local: "", Drinks: "", Sides: "🍟" };
 
 function read(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }
@@ -58,6 +58,95 @@ document.body.insertAdjacentHTML("beforeend", `
     </div>
     <div id="orders-list"></div>
   </aside>
+`);
+
+/* TOAST MESSAGES */
+
+function toast(message, type = "info") {
+  let box = $("toast-box");
+  if (!box) {
+    document.body.insertAdjacentHTML("beforeend", '<div id="toast-box" aria-live="polite"></div>');
+    box = $("toast-box");
+  }
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  el.textContent = message;
+  box.appendChild(el);
+  setTimeout(() => el.classList.add("hide"), 3200);
+  setTimeout(() => el.remove(), 3700);
+}
+
+/* MOBILE MENU BUTTON */
+
+(function () {
+  const bar = document.querySelector(".navbar");
+  const links = bar && bar.querySelector(".nav-links");
+  if (!links) return;
+  const btn = document.createElement("button");
+  btn.className = "menu-toggle";
+  btn.setAttribute("aria-label", "Open menu");
+  btn.textContent = "☰";
+  btn.onclick = () => {
+    const open = links.classList.toggle("open");
+    btn.textContent = open ? "✕" : "☰";
+  };
+  links.addEventListener("click", (e) => {
+    if (e.target.tagName === "A") { links.classList.remove("open"); btn.textContent = "☰"; }
+  });
+  bar.appendChild(btn);
+})();
+
+/* FLOATING CART BAR (phones) */
+
+document.body.insertAdjacentHTML("beforeend", '<button id="cart-bar" class="cart-bar" hidden onclick="openCart()"></button>');
+
+function refreshCartBar() {
+  const bar = $("cart-bar");
+  if (!bar) return;
+  if (cart.length === 0) { bar.hidden = true; return; }
+  const total = cart.reduce((sum, id) => {
+    const f = menuItems.find((x) => x.id === id);
+    return sum + (f ? f.price : 0);
+  }, 0);
+  bar.innerHTML = `<span>🛒 ${cart.length} item${cart.length > 1 ? "s" : ""}${total ? " · " + money(total) : ""}</span><strong>View order →</strong>`;
+  bar.hidden = false;
+}
+
+/* SITE FOOTER (the same on every page) */
+
+document.querySelectorAll("footer").forEach((f) => f.remove());
+document.body.insertAdjacentHTML("beforeend", `
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">SAVORA</div>
+        <p>Fresh ingredients, beautiful flavors and meals made for you.</p>
+        <a class="footer-reserve" href="reserve.html">Reserve a table</a>
+      </div>
+      <div>
+        <h4>EXPLORE</h4>
+        <a href="index.html#home">Home</a>
+        <a href="menu.html">Full menu</a>
+        <a href="reserve.html">Reserve a table</a>
+        <a href="index.html#about">Our story</a>
+        <a href="index.html#contact">Contact</a>
+      </div>
+      <div>
+        <h4>VISIT US</h4>
+        <p>No. 24, Kunle Thompson Street, Dada Estate, Osogbo, Osun State</p>
+        <p class="open-hours"></p>
+        <a href="tel:+2348141339830">+234 814 133 9830</a>
+        <a href="mailto:Opeyemiabdulrahman23@gmail.com">Opeyemiabdulrahman23@gmail.com</a>
+        <a href="https://wa.me/2348141339830" target="_blank" rel="noopener">Chat on WhatsApp</a>
+      </div>
+      <div>
+        <h4>LEGAL</h4>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 Savora Restaurant, Osogbo. All rights reserved.</div>
+  </footer>
 `);
 
 /* OPENING HOURS */
@@ -209,8 +298,13 @@ function updateCart() {
   renderCart();
 }
 
-function addToCart(id) { cart.push(id); updateCart(); }
-function addOne(id) { addToCart(id); }
+function addToCart(id) {
+  cart.push(id);
+  updateCart();
+  const f = menuItems.find((x) => x.id === id);
+  toast(f ? `Added ${f.name} to your order` : "Added to your order", "success");
+}
+function addOne(id) { cart.push(id); updateCart(); }
 
 function removeOne(id) {
   const i = cart.indexOf(id);
@@ -224,6 +318,7 @@ function removeAll(id) {
 }
 
 function renderCart() {
+  refreshCartBar();
   const box = $("cart-items");
   let total = 0;
 
@@ -302,14 +397,14 @@ function whatsappLink(o) {
 }
 
 async function placeOrder() {
-  if (cart.length === 0) return alert("Your order is empty. Add something from the menu first.");
+  if (cart.length === 0) return toast("Your order is empty. Add something from the menu first.");
 
   const customer_name = $("cust-name").value.trim();
   const phone = $("cust-phone").value.trim();
-  if (!customer_name || !phone) return alert("Please enter your name and phone number.");
+  if (!customer_name || !phone) return toast("Please enter your name and phone number.");
   const address = $("cust-address").value.trim();
   const note = $("cust-note").value.trim();
-  if (orderType === "delivery" && address.length < 5) return alert("Please enter your delivery address.");
+  if (orderType === "delivery" && address.length < 5) return toast("Please enter your delivery address.");
 
   try {
     const response = await fetch(API + "/api/orders", {
@@ -318,16 +413,16 @@ async function placeOrder() {
       body: JSON.stringify({ customer_name, phone, cart, order_type: orderType, address, note }),
     });
     const data = await response.json();
-    if (!response.ok) return alert(data.error);
+    if (!response.ok) return toast(data.error, "error");
 
     saveOrderToken(data.token);
     $("cust-note").value = "";
     cart = [];
     updateCart();
-    alert(`Order #${data.orderId} placed! Total: ${money(data.total)}`);
+    toast(`Order #${data.orderId} placed! Total: ${money(data.total)}`, "success");
     openOrders();
   } catch (error) {
-    alert("Could not reach the server. Is it running?");
+    toast("Could not reach the server. Is it running?", "error");
   }
 }
 
