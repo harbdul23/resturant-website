@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Savora Admin</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="glass.css">
+</head>
+<body>
+
+    <section class="auth-page" id="admin-login">
+        <div class="auth-card">
+            <h2>Admin login</h2>
+            <p class="hint">For the restaurant owner only.</p>
+            <label for="admin-pass">Password</label>
+            <input type="password" id="admin-pass" placeholder="Admin password" onkeydown="if (event.key === 'Enter') adminLogin()">
+            <p class="auth-error" id="admin-error"></p>
+            <button class="auth-submit" onclick="adminLogin()">Log in</button>
+        </div>
+    </section>
+
+    <main class="admin-wrap" id="admin-board" hidden>
+        <div class="admin-top">
+            <div>
+                <p class="small-title">SAVORA ADMIN</p>
+                <h2 id="admin-count">Orders</h2>
+            </div>
+            <div>
+                <button onclick="loadOrders()">Refresh</button>
+                <button onclick="adminLogout()">Log out</button>
+            </div>
+        </div>
+        <div id="admin-orders"></div>
+
+        <h2 class="admin-sub">Table reservations</h2>
+        <div id="admin-res"></div>
+    </main>
+
+<script>
+const API = ["5500", "5501"].includes(location.port) ? "http://localhost:5000" : "";
+const STATUSES = ["pending", "preparing", "ready", "delivered", "cancelled"];
+const $ = (id) => document.getElementById(id);
+const money = (n) => "₦" + Number(n).toLocaleString();
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+let token = null;
+try { token = sessionStorage.getItem("savora_admin"); } catch (e) {}
+let timer = null;
+
+const headers = () => ({ "Content-Type": "application/json", Authorization: "Bearer " + token });
+
+async function adminLogin() {
+  $("admin-error").textContent = "";
+  try {
+    const response = await fetch(API + "/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: $("admin-pass").value }),
+    });
+    const data = await response.json();
+    if (!response.ok) { $("admin-error").textContent = data.error; return; }
+    token = data.token;
+    try { sessionStorage.setItem("savora_admin", token); } catch (e) {}
+    showBoard();
+  } catch (e) {
+    $("admin-error").textContent = "Could not reach the server.";
+  }
+}
+
+function adminLogout() {
+  try { sessionStorage.removeItem("savora_admin"); } catch (e) {}
+  token = null;
+  clearInterval(timer);
+  $("admin-board").hidden = true;
+  $("admin-login").hidden = false;
+  $("admin-pass").value = "";
+}
+
+function showBoard() {
+  $("admin-login").hidden = true;
+  $("admin-board").hidden = false;
+  loadOrders();
+  clearInterval(timer);
+  timer = setInterval(loadOrders, 20000);
+}
+
+async function loadOrders() {
+  try {
+    const response = await fetch(API + "/api/admin/orders", { headers: headers() });
+    if (response.status === 401) return adminLogout();
+    renderOrders(await response.json());
+    loadReservations();
+  } catch (e) {
+    $("admin-orders").innerHTML = "<p>Could not load orders. Is the server running?</p>";
+  }
+}
+
+function renderOrders(orders) {
+  const waiting = orders.filter((o) => o.status === "pending").length;
+  $("admin-count").textContent = `Orders (${waiting} new)`;
+  document.title = (waiting ? `(${waiting}) ` : "") + "Savora Admin";
+
+  $("admin-orders").innerHTML = orders.length === 0 ? "<p>No orders yet.</p>" : orders.map((o) => `
+    <div class="admin-order">
+      <div class="order-top">
+        <strong>Order #${o.id} · ${esc(o.customer_name)}</strong>
+        <span class="order-status s-${esc(o.status)}">${esc(o.status)}</span>
+      </div>
+      <small>${new Date(o.created_at.replace(" ", "T") + "Z").toLocaleString()} ·
+        <a href="tel:${esc(o.phone)}">${esc(o.phone)}</a></small>
+      <ul>${o.items.map((i) => `<li>${i.quantity} × ${esc(i.name)}</li>`).join("")}</ul>
+      <p class="order-meta">${o.order_type === "delivery"
+        ? "Delivery to: " + esc(o.address) + " (fee " + money(o.delivery_fee) + ")" : "Pickup"}${o.note ? "<br>Note: " + esc(o.note) : ""}</p>
+      <strong>${money(o.total)}</strong>
+      <div class="status-row">
+        ${STATUSES.map((s) => `<button class="${o.status === s ? "on" : ""}" onclick="setStatus(${o.id}, '${s}')">${s}</button>`).join("")}
+      </div>
+    </div>`).join("");
+}
+
+async function setStatus(id, status) {
+  try {
+    const response = await fetch(API + "/api/admin/orders/" + id + "/status", {
+      method: "POST", headers: headers(), body: JSON.stringify({ status }),
+    });
+    if (response.status === 401) return adminLogout();
+    loadOrders();
+  } catch (e) {
+    alert("Could not update the order.");
+  }
+}
+
+async function loadReservations() {
+  try {
+    const response = await fetch(API + "/api/admin/reservations", { headers: headers() });
+    if (response.status === 401) return adminLogout();
+    const list = await response.json();
+    $("admin-res").innerHTML = list.length === 0 ? "<p>No reservations yet.</p>" : list.map((r) => `
+      <div class="admin-order">
+        <div class="order-top">
+          <strong>${esc(r.name)} · ${r.guests} guest${r.guests > 1 ? "s" : ""}</strong>
+          <span class="order-status s-${esc(r.status)}">${esc(r.status)}</span>
+        </div>
+        <small>${esc(r.date)} at ${esc(r.time)} · <a href="tel:${esc(r.phone)}">${esc(r.phone)}</a></small>
+        ${r.note ? `<p class="order-meta">Note: ${esc(r.note)}</p>` : ""}
+        <div class="status-row">
+          ${["pending", "confirmed", "cancelled"].map((s) =>
+            `<button class="${r.status === s ? "on" : ""}" onclick="setResStatus(${r.id}, '${s}')">${s}</button>`).join("")}
+        </div>
+      </div>`).join("");
+  } catch (e) {}
+}
+
+async function setResStatus(id, status) {
+  try {
+    await fetch(API + "/api/admin/reservations/" + id + "/status", {
+      method: "POST", headers: headers(), body: JSON.stringify({ status }),
+    });
+    loadReservations();
+  } catch (e) { alert("Could not update the reservation."); }
+}
+
+if (token) showBoard();
+</script>
+</body>
+</html>

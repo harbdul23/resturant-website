@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Menu | Savora Restaurant</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="glass.css">
+</head>
+<body data-page="menu">
+
+    <header class="navbar">
+        <a href="index.html" class="logo">SAVORA</a>
+        <nav class="nav-links">
+            <a href="index.html#home">Home</a>
+            <a href="menu.html">Menu</a>
+            <a href="reserve.html">Reserve</a>
+            <a href="index.html#about">About</a>
+            <a href="index.html#contact">Contact</a>
+        </nav>
+        <div class="nav-actions">
+            <a href="login.html" id="auth-link" class="auth-link">Log in</a>
+            <button class="cart-button" onclick="openCart()">🛒 Cart <span id="cart-count">0</span></button>
+        </div>
+    </header>
+
+    <main>
+        <section class="page-hero">
+            <p class="small-title">FULL MENU</p>
+            <h2>Everything we cook</h2>
+            <p>Pick a category, add what you like, and place your order from the cart.</p>
+            <input id="menu-search" class="menu-search" type="search" placeholder="Search dishes..." oninput="setQuery(this.value)">
+            <div class="filters" id="filters"></div>
+        </section>
+
+        <section class="menu-section menu-page-grid">
+            <div class="menu-grid" id="menu-container"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>
+            © 2026 Savora Restaurant · No. 24, Kunle Thompson Street, Dada Estate, Osogbo ·
+            <a href="tel:+2348141339830">+234 814 133 9830</a>
+        </p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

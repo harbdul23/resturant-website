@@ -1,7 +1,7 @@
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 
-const dbPath = process.env.DB_PATH || path.join(__dirname, "savora.db");
+const dbPath = path.join(__dirname, "savora.db");
 
 const db = new sqlite3.Database(dbPath, (error) => {
     if (error) {
@@ -29,7 +29,15 @@ db.run(`
         return;
     }
     console.log("Menu table ready.");
-    insertInitialMenu(insertExtraMenu);
+    // "popular" flag for the badge (the column is added once; the error is ignored if it exists)
+    db.run("ALTER TABLE menu ADD COLUMN popular INTEGER DEFAULT 0", () => {
+        insertInitialMenu(() => {
+            db.run(`UPDATE menu SET popular = 1
+                    WHERE name IN ('Classic Burger', 'Chicken Pizza', 'Creamy Pasta')
+                    AND (SELECT COUNT(*) FROM menu WHERE popular = 1) = 0`);
+            insertExtraMenu();
+        });
+    });
 });
 
 
@@ -85,9 +93,9 @@ function insertInitialMenu(done) {
 function insertExtraMenu() {
     const extras = [
         ["Jollof Rice & Chicken", "Smoky party jollof rice served with grilled chicken and fried plantain.", 6000, "Local", ""],
-        ["Pounded Yam & Egusi", "Soft pounded yam with rich egusi soup and assorted meat.", 7500, "Local", ""],
+        ["Pounded Yam & Egusi", "Soft pounded yam with rich egusi soup and assorted meat.", 7500, "Local", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQREtnX169EdW2Jb8HPajwUU4l3w-uMHLMKAa-VaXcyAw&s=10"],
         ["Asun Peppered Goat", "Spicy grilled goat meat tossed with onions and peppers.", 6500, "Local", ""],
-        ["Suya Platter", "Thinly sliced beef suya with yaji spice, onions and tomatoes.", 5000, "Local", ""],
+        ["Suya Platter", "Thinly sliced beef suya with yaji spice, onions and tomatoes.", 5000, "Local", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaAFoqe7eyWLtyx7SXHo8UGOs67E5KMpLeF_4qoUFu4w&s=10"],
         ["Chapman", "Chilled citrus and cucumber drink, served over ice.", 2500, "Drinks", ""],
         ["Fresh Fruit Smoothie", "Blended seasonal fruits, served cold.", 3000, "Drinks", ""],
         ["Zobo Drink", "Chilled hibiscus drink with ginger and pineapple.", 1500, "Drinks", ""],
@@ -129,6 +137,10 @@ db.run(`
     // Adds the token column if it is missing (the error is ignored if it already exists)
     db.run("ALTER TABLE orders ADD COLUMN token TEXT", () => {});
     db.run("ALTER TABLE orders ADD COLUMN user_id INTEGER", () => {});
+    db.run("ALTER TABLE orders ADD COLUMN order_type TEXT DEFAULT 'pickup'", () => {});
+    db.run("ALTER TABLE orders ADD COLUMN address TEXT", () => {});
+    db.run("ALTER TABLE orders ADD COLUMN note TEXT", () => {});
+    db.run("ALTER TABLE orders ADD COLUMN delivery_fee REAL DEFAULT 0", () => {});
 });
 
 /* ACCOUNTS */
@@ -149,6 +161,22 @@ db.run(`
     CREATE TABLE IF NOT EXISTS sessions (
         token TEXT PRIMARY KEY,
         user_id INTEGER NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+
+/* RESERVATIONS */
+
+db.run(`
+    CREATE TABLE IF NOT EXISTS reservations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        date TEXT NOT NULL,
+        time TEXT NOT NULL,
+        guests INTEGER NOT NULL,
+        note TEXT,
+        status TEXT DEFAULT 'pending',
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
 `);

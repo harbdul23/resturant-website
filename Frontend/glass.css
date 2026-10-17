@@ -3,7 +3,7 @@
 .center { text-align: center; margin-top: 50px; }
 
 .cart-button { font-size: 14px; transition: 0.3s; }
-.cart-button:hover { background: hwb(0 100% 0% / 0.2); }
+.cart-button:hover { background: rgba(255, 255, 255, 0.2); }
 
 .food-card img, .food-emoji { width: 100%; height: 240px; object-fit: cover; }
 .food-emoji {
@@ -98,7 +98,7 @@ footer a { color: #aaa; text-decoration: none; }
 /* Keep Home and Menu links reachable on phones */
 @media (max-width: 700px) {
     .nav-links { display: flex; gap: 14px; }
-    .nav-links a:nth-child(n+3) { display: none; }
+    .nav-links a:nth-child(n+4) { display: none; }
     .page-hero { padding-top: 130px; }
     .page-hero h2 { font-size: 38px; }
 }
@@ -173,3 +173,100 @@ footer a { color: #aaa; text-decoration: none; }
 @media (max-width: 700px) {
     .auth-link, .cart-button { padding: 8px 10px; font-size: 13px; }
 }
+
+/* ===== delivery options, WhatsApp button, admin ===== */
+[hidden] { display: none !important; }
+
+.type-toggle { display: flex; gap: 8px; }
+.type-toggle button { flex: 1; }
+#cart-panel .type-toggle button.active { background: #ff9f43; border-color: #ff9f43; color: #000; font-weight: 700; }
+#cart-panel textarea {
+    width: 100%; padding: 11px 14px; border-radius: 12px; font-size: 14px; resize: none; font-family: inherit;
+    border: 1px solid rgba(255, 255, 255, 0.28); background: rgba(255, 255, 255, 0.12); color: #fff; outline: none;
+}
+#cart-panel textarea::placeholder { color: rgba(255, 255, 255, 0.55); }
+#cart-panel textarea:focus { border-color: #ff9f43; }
+.cart-line { display: flex; justify-content: space-between; font-size: 14px; color: rgba(255, 255, 255, 0.8); }
+.cart-footer { max-height: 65vh; overflow-y: auto; }
+
+.order-meta { font-size: 13px; color: rgba(255, 255, 255, 0.7); margin: 6px 0; }
+.wa-btn {
+    display: block; margin-top: 10px; padding: 10px; text-align: center; border-radius: 12px;
+    background: #25d366; color: #04210f; font-weight: 700; text-decoration: none;
+}
+.order-status.s-preparing { background: rgba(80, 160, 255, 0.25); color: #a9d0ff; }
+.order-status.s-ready { background: rgba(60, 200, 120, 0.25); color: #9ff0c3; }
+.order-status.s-delivered { background: rgba(255, 255, 255, 0.15); color: #ddd; }
+.order-status.s-cancelled { background: rgba(255, 90, 90, 0.25); color: #ffb0b0; }
+
+.admin-wrap { max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
+.admin-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+.admin-top button, .status-row button {
+    border: 1px solid rgba(255, 255, 255, 0.28); background: rgba(255, 255, 255, 0.12); color: #fff;
+    padding: 8px 14px; border-radius: 12px; cursor: pointer; font-size: 14px; text-transform: capitalize;
+}
+.admin-order {
+    border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-radius: 18px; padding: 18px; margin-bottom: 14px;
+}
+.admin-order a { color: #ff9f43; }
+.admin-order ul { margin: 8px 0; padding-left: 18px; }
+.admin-order small { color: rgba(255, 255, 255, 0.6); }
+.status-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.status-row button.on { background: #ff9f43; border-color: #ff9f43; color: #000; font-weight: 700; }
+
+/* ===== badges, dish pop-up, search, map, reservations ===== */
+.food-card { position: relative; cursor: pointer; }
+.badge {
+    position: absolute; top: 12px; left: 12px; z-index: 2; padding: 5px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 700; color: #000; background: #ff9f43;
+}
+.badge-inline {
+    font-size: 11px; padding: 3px 9px; border-radius: 20px; background: #ff9f43; color: #000; vertical-align: middle;
+}
+.open-badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+.open-badge.is-open { background: rgba(60, 200, 120, 0.22); color: #9ff0c3; border: 1px solid rgba(60, 200, 120, 0.4); }
+.open-badge.is-closed { background: rgba(255, 90, 90, 0.2); color: #ffb0b0; border: 1px solid rgba(255, 90, 90, 0.4); }
+.open-hours { color: rgba(255, 255, 255, 0.7); font-size: 14px; }
+
+.menu-search {
+    display: block; width: min(420px, 100%); margin: 24px auto 0; padding: 13px 18px; border-radius: 16px;
+    font-size: 15px; color: #fff; outline: none;
+    border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.menu-search::placeholder { color: rgba(255, 255, 255, 0.55); }
+.menu-search:focus { border-color: #ff9f43; }
+
+.dish-modal {
+    position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center;
+    padding: 20px; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(4px);
+}
+.dish-box {
+    position: relative; width: min(460px, 100%); max-height: 90vh; overflow-y: auto; border-radius: 24px;
+    color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.dish-img { display: block; width: 100%; height: 260px; object-fit: cover; border-radius: 24px 24px 0 0; }
+.dish-info { padding: 20px; }
+.dish-info h3 { margin-bottom: 4px; }
+.dish-cat { color: #ff9f43; font-size: 13px; margin-bottom: 12px; }
+.dish-info p { color: rgba(255, 255, 255, 0.8); line-height: 1.6; margin-bottom: 16px; }
+.dish-close {
+    position: absolute; top: 12px; right: 12px; z-index: 3; width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(0, 0, 0, 0.4); color: #fff;
+}
+
+.map { display: block; width: min(720px, 100%); height: 300px; border: 0; border-radius: 20px; margin: 0 auto 28px; filter: invert(0.9) hue-rotate(180deg); }
+
+.auth-card select, .auth-card textarea {
+    width: 100%; padding: 13px 16px; border-radius: 16px; font-size: 15px; color: #fff; outline: none; font-family: inherit;
+    border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.1);
+}
+.auth-card select option { color: #000; }
+.auth-card textarea { resize: none; }
+.auth-card select:focus, .auth-card textarea:focus { border-color: #ff9f43; }
+.order-status.s-confirmed { background: rgba(60, 200, 120, 0.25); color: #9ff0c3; }
+.admin-sub { margin: 40px 0 16px; font-size: 26px; }

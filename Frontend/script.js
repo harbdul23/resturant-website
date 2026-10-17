@@ -13,6 +13,10 @@ function write(key, value) {
 
 let menuItems = [];
 let cart = read("savora_cart", []);
+let orderType = "pickup";
+let deliveryFee = 1000;
+let whatsappNumber = "2348141339830";
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 let auth = read("savora_auth", null);
 const authHeaders = () => (auth ? { Authorization: "Bearer " + auth.token } : {});
 
@@ -32,6 +36,13 @@ document.body.insertAdjacentHTML("beforeend", `
     <div class="cart-footer">
       <input id="cust-name" placeholder="Your name" autocomplete="name">
       <input id="cust-phone" placeholder="Phone number" inputmode="tel" autocomplete="tel">
+      <div class="type-toggle">
+        <button type="button" id="type-pickup" class="active" onclick="setOrderType('pickup')">Pickup</button>
+        <button type="button" id="type-delivery" onclick="setOrderType('delivery')">Delivery</button>
+      </div>
+      <textarea id="cust-address" placeholder="Delivery address" rows="2" maxlength="200" hidden></textarea>
+      <input id="cust-note" placeholder="Note for the kitchen (optional)" maxlength="300">
+      <div class="cart-line" id="fee-line" hidden><span>Delivery fee</span><strong id="cart-fee">₦0</strong></div>
       <div class="cart-total"><span>Total</span><strong id="cart-total">₦0</strong></div>
       <button class="place-btn" onclick="placeOrder()">Place Order</button>
     </div>
@@ -48,6 +59,67 @@ document.body.insertAdjacentHTML("beforeend", `
     <div id="orders-list"></div>
   </aside>
 `);
+
+/* OPENING HOURS */
+
+let openHours = { open: "08:00", close: "22:00" };
+
+const fmt12 = (hhmm) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return ((h + 11) % 12 + 1) + ":" + String(m).padStart(2, "0") + (h % 24 < 12 ? " AM" : " PM");
+};
+
+function lagosMinutes() {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Lagos", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date());
+  const get = (t) => Number(parts.find((p) => p.type === t).value);
+  return (get("hour") % 24) * 60 + get("minute");
+}
+
+function updateOpenBadge() {
+  const toMin = (s) => { const [h, m] = s.split(":").map(Number); return h * 60 + m; };
+  const now = lagosMinutes();
+  const isOpen = now >= toMin(openHours.open) && now < toMin(openHours.close);
+  document.querySelectorAll(".open-badge").forEach((el) => {
+    el.className = "open-badge " + (isOpen ? "is-open" : "is-closed");
+    el.textContent = isOpen ? "Open now · until " + fmt12(openHours.close) : "Closed now · opens " + fmt12(openHours.open);
+  });
+  document.querySelectorAll(".open-hours").forEach((el) => {
+    el.textContent = "Open daily " + fmt12(openHours.open) + " – " + fmt12(openHours.close);
+  });
+}
+
+/* DISH POP-UP */
+
+document.body.insertAdjacentHTML("beforeend", `
+  <div id="dish-modal" class="dish-modal" hidden onclick="if (event.target === this) closeDish()">
+    <div class="dish-box">
+      <button class="dish-close" onclick="closeDish()" aria-label="Close">✕</button>
+      <div id="dish-body"></div>
+    </div>
+  </div>
+`);
+
+function openDish(id) {
+  const f = menuItems.find((x) => x.id === id);
+  if (!f) return;
+  $("dish-body").innerHTML = `
+    ${f.image
+      ? `<img class="dish-img" src="${f.image}" alt="${f.name}">`
+      : `<div class="dish-img food-emoji">${ICONS[f.category] || "🍽"}</div>`}
+    <div class="dish-info">
+      <h3>${f.name} ${f.popular ? '<span class="badge-inline">Popular</span>' : ""}</h3>
+      <p class="dish-cat">${f.category}</p>
+      <p>${f.description}</p>
+      <div class="food-bottom">
+        <span class="food-price">${money(f.price)}</span>
+        <button class="add-button" onclick="addToCart(${f.id}); closeDish()">Add to order</button>
+      </div>
+    </div>`;
+  $("dish-modal").hidden = false;
+}
+
+function closeDish() { $("dish-modal").hidden = true; }
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDish(); });
 
 /* MENU */
 
@@ -71,8 +143,13 @@ async function loadMenu() {
 
 function displayMenu(list) {
   const box = $("menu-container");
+  if (!list.length) {
+    box.innerHTML = "<p class='cart-empty'>No dishes match your search.</p>";
+    return;
+  }
   box.innerHTML = list.map((f) => `
-    <article class="food-card">
+    <article class="food-card" onclick="openDish(${f.id})">
+      ${f.popular ? '<span class="badge">Popular</span>' : ""}
       ${f.image
         ? `<img src="${f.image}" alt="${f.name}" data-cat="${f.category}">`
         : `<div class="food-emoji">${ICONS[f.category] || "🍽"}</div>`}
@@ -81,7 +158,7 @@ function displayMenu(list) {
         <p>${f.description}</p>
         <div class="food-bottom">
           <span class="food-price">${money(f.price)}</span>
-          <button class="add-button" onclick="addToCart(${f.id})">Add</button>
+          <button class="add-button" onclick="event.stopPropagation(); addToCart(${f.id})">Add</button>
         </div>
       </div>
     </article>`).join("");
@@ -102,10 +179,26 @@ function renderFilters() {
     .join("");
 }
 
+let currentCat = "All";
+let currentQuery = "";
+
+function applyFilters() {
+  const q = currentQuery.trim().toLowerCase();
+  displayMenu(menuItems.filter((f) =>
+    (currentCat === "All" || f.category === currentCat) &&
+    (!q || (f.name + " " + f.description + " " + f.category).toLowerCase().includes(q))));
+}
+
 function filterMenu(cat, btn) {
   document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
   btn.classList.add("active");
-  displayMenu(cat === "All" ? menuItems : menuItems.filter((f) => f.category === cat));
+  currentCat = cat;
+  applyFilters();
+}
+
+function setQuery(value) {
+  currentQuery = value;
+  applyFilters();
 }
 
 /* CART */
@@ -168,7 +261,9 @@ function renderCart() {
       </div>`;
   }).join("");
 
-  $("cart-total").textContent = money(total);
+  const fee = orderType === "delivery" ? deliveryFee : 0;
+  $("cart-fee").textContent = money(fee);
+  $("cart-total").textContent = money(total + fee);
 }
 
 function show(id) {
@@ -186,23 +281,47 @@ function openCart() {
   show("cart-panel");
 }
 
+function setOrderType(type) {
+  orderType = type;
+  $("type-pickup").classList.toggle("active", type === "pickup");
+  $("type-delivery").classList.toggle("active", type === "delivery");
+  $("cust-address").hidden = type !== "delivery";
+  $("fee-line").hidden = type !== "delivery";
+  renderCart();
+}
+
+function whatsappLink(o) {
+  const lines = [
+    `Hello Savora, I placed order #${o.id}:`,
+    ...o.items.map((i) => `${i.quantity} × ${i.name}`),
+    o.order_type === "delivery" ? `Delivery to: ${o.address}` : "Pickup",
+    o.note ? `Note: ${o.note}` : null,
+    `Total: ${money(o.total)}`,
+  ].filter(Boolean);
+  return "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(lines.join("\n"));
+}
+
 async function placeOrder() {
   if (cart.length === 0) return alert("Your order is empty. Add something from the menu first.");
 
   const customer_name = $("cust-name").value.trim();
   const phone = $("cust-phone").value.trim();
   if (!customer_name || !phone) return alert("Please enter your name and phone number.");
+  const address = $("cust-address").value.trim();
+  const note = $("cust-note").value.trim();
+  if (orderType === "delivery" && address.length < 5) return alert("Please enter your delivery address.");
 
   try {
     const response = await fetch(API + "/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify({ customer_name, phone, cart }),
+      body: JSON.stringify({ customer_name, phone, cart, order_type: orderType, address, note }),
     });
     const data = await response.json();
     if (!response.ok) return alert(data.error);
 
     saveOrderToken(data.token);
+    $("cust-note").value = "";
     cart = [];
     updateCart();
     alert(`Order #${data.orderId} placed! Total: ${money(data.total)}`);
@@ -251,11 +370,13 @@ async function openOrders() {
       <div class="order-card">
         <div class="order-top">
           <strong>Order #${o.id}</strong>
-          <span class="order-status">${o.status}</span>
+          <span class="order-status s-${esc(o.status)}">${esc(o.status)}</span>
         </div>
         <small>${new Date(o.created_at.replace(" ", "T") + "Z").toLocaleString()}</small>
         <ul>${o.items.map((i) => `<li>${i.quantity} × ${i.name}</li>`).join("")}</ul>
+        <p class="order-meta">${o.order_type === "delivery" ? "Delivery to: " + esc(o.address) + " (fee " + money(o.delivery_fee) + ")" : "Pickup"}${o.note ? "<br>Note: " + esc(o.note) : ""}</p>
         <strong>${money(o.total)}</strong>
+        <a class="wa-btn" target="_blank" rel="noopener" href="${whatsappLink(o)}">Send this order on WhatsApp</a>
       </div>`).join("");
   } catch (error) {
     box.innerHTML = "<p class='cart-empty'>Could not load your orders. Is the server running?</p>";
@@ -283,8 +404,16 @@ function setupAuth() {
 
 /* START */
 
+fetch(API + "/api/config")
+  .then((r) => r.json())
+  .then((c) => { deliveryFee = c.deliveryFee; whatsappNumber = c.whatsapp; if (c.hours) openHours = c.hours; renderCart(); updateOpenBadge(); })
+  .catch(() => {});
+
 setupAuth();
 
 $("cart-count").textContent = cart.length;
 renderCart();
 loadMenu();
+
+updateOpenBadge();
+setInterval(updateOpenBadge, 60000);

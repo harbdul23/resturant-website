@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserve a Table | Savora Restaurant</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="glass.css">
+</head>
+<body data-page="reserve">
+
+    <header class="navbar">
+        <a href="index.html" class="logo">SAVORA</a>
+        <nav class="nav-links">
+            <a href="index.html#home">Home</a>
+            <a href="menu.html">Menu</a>
+            <a href="reserve.html">Reserve</a>
+            <a href="index.html#about">About</a>
+            <a href="index.html#contact">Contact</a>
+        </nav>
+        <div class="nav-right">
+            <span class="user-greet" id="user-greet"></span>
+            <a href="login.html#login" class="login-btn" id="auth-link">Log in</a>
+            <button class="cart-button" onclick="openCart()">
+                🛒 Cart <span id="cart-count">0</span>
+            </button>
+        </div>
+    </header>
+
+    <section class="auth-page">
+        <div class="auth-card">
+            <p class="small-title">RESERVATIONS</p>
+            <h2>Book a table</h2>
+            <p class="hint"><span class="open-badge"></span> <span class="open-hours"></span></p>
+
+            <form id="res-form" onsubmit="submitReservation(event)">
+                <label for="r-name">Your name</label>
+                <input id="r-name" placeholder="e.g. Tolu Adebayo" autocomplete="name" required>
+
+                <label for="r-phone">Phone number</label>
+                <input id="r-phone" placeholder="e.g. 0801 234 5678" inputmode="tel" autocomplete="tel" required>
+
+                <label for="r-date">Date</label>
+                <input id="r-date" type="date" required>
+
+                <label for="r-time">Time</label>
+                <select id="r-time" required></select>
+
+                <label for="r-guests">Number of guests</label>
+                <select id="r-guests"></select>
+
+                <label for="r-note">Anything we should know? (optional)</label>
+                <textarea id="r-note" rows="2" maxlength="300" placeholder="Birthday, high chair, window seat..."></textarea>
+
+                <p class="auth-error" id="r-error"></p>
+                <button class="auth-submit" id="r-submit" type="submit">Reserve table</button>
+            </form>
+
+            <div id="r-done" hidden>
+                <h3>Request received</h3>
+                <p id="r-done-text"></p>
+                <a class="wa-btn" id="r-wa" target="_blank" rel="noopener" href="#">Confirm on WhatsApp</a>
+                <button class="auth-submit" onclick="location.reload()">Book another table</button>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>© 2026 Savora Restaurant · No. 24, Kunle Thompson Street, Dada Estate, Osogbo ·
+            <a href="tel:+2348141339830">+234 814 133 9830</a></p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        const todayLagos = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" });
+        $("r-date").min = todayLagos;
+        $("r-date").value = todayLagos;
+        $("r-guests").innerHTML = Array.from({ length: 12 }, (_, i) =>
+            `<option value="${i + 1}">${i + 1} ${i ? "guests" : "guest"}</option>`).join("");
+
+        function fillTimes(hours) {
+          const [oh, om] = hours.open.split(":").map(Number);
+          const [lh, lm] = (hours.lastBooking || "21:00").split(":").map(Number);
+          const options = [];
+          for (let t = oh * 60 + om; t <= lh * 60 + lm; t += 30) {
+            const v = String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0");
+            options.push(`<option value="${v}">${fmt12(v)}</option>`);
+          }
+          $("r-time").innerHTML = options.join("");
+        }
+        fillTimes({ open: "08:00", lastBooking: "21:00" });
+        fetch(API + "/api/config").then((r) => r.json()).then((c) => c.hours && fillTimes(c.hours)).catch(() => {});
+
+        if (auth && auth.user) {
+          $("r-name").value = auth.user.name || "";
+          $("r-phone").value = auth.user.phone || "";
+        }
+
+        async function submitReservation(e) {
+          e.preventDefault();
+          $("r-error").textContent = "";
+          $("r-submit").disabled = true;
+          const body = {
+            name: $("r-name").value, phone: $("r-phone").value, date: $("r-date").value,
+            time: $("r-time").value, guests: Number($("r-guests").value), note: $("r-note").value,
+          };
+          try {
+            const response = await fetch(API + "/api/reservations", {
+              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+            });
+            const data = await response.json();
+            if (!response.ok) { $("r-error").textContent = data.error; return; }
+
+            $("res-form").hidden = true;
+            $("r-done").hidden = false;
+            $("r-done-text").textContent =
+              `Reservation #${data.id} for ${body.guests} on ${body.date} at ${fmt12(body.time)}. We'll confirm it by phone or WhatsApp.`;
+            const msg = `Hello Savora, I'd like to confirm my table reservation #${data.id}: ${body.guests} guest(s) on ${body.date} at ${fmt12(body.time)}. Name: ${body.name}.`;
+            $("r-wa").href = "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(msg);
+          } catch (err) {
+            $("r-error").textContent = "Could not reach the server. Is it running?";
+          } finally {
+            $("r-submit").disabled = false;
+          }
+        }
+    </script>
+</body>
+</html>
