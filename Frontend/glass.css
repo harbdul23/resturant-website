@@ -348,3 +348,36 @@ footer a { color: #aaa; text-decoration: none; }
     .legal-card h1 { font-size: 30px; }
 }
 @media (max-width: 520px) { .footer-grid { grid-template-columns: 1fr; } }
+
+/* ===== scroll animations, loading placeholders, FAQ ===== */
+.reveal { opacity: 0; transform: translateY(26px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.in-view { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
+
+.sk {
+    background: linear-gradient(100deg, rgba(255, 255, 255, 0.06) 30%, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.06) 70%);
+    background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 10px;
+}
+.sk-img { height: 240px; border-radius: 0; }
+.sk-line { height: 14px; margin-bottom: 12px; }
+.sk-line.w60 { width: 60%; height: 20px; }
+.sk-line.w40 { width: 40%; }
+.skeleton-card { pointer-events: none; }
+.sk-note { grid-column: 1 / -1; text-align: center; color: rgba(255, 255, 255, 0.7); font-size: 15px; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+.faq-section { padding: 110px 8%; }
+.faq-list { max-width: 760px; margin: 0 auto; display: grid; gap: 12px; }
+.faq-list details {
+    border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+.faq-list summary {
+    cursor: pointer; padding: 18px 22px; font-weight: 700; list-style: none;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+}
+.faq-list summary::-webkit-details-marker { display: none; }
+.faq-list summary::after { content: "+"; color: #ff9f43; font-size: 24px; line-height: 1; transition: transform 0.25s; }
+.faq-list details[open] summary::after { transform: rotate(45deg); }
+.faq-list details p { padding: 0 22px 20px; color: rgba(255, 255, 255, 0.78); line-height: 1.7; }
+.faq-list a { color: #ff9f43; }

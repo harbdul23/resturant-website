@@ -2,7 +2,7 @@ const API = ["5500", "5501"].includes(location.port) ? "http://localhost:5000" :
 const page = document.body.dataset.page;
 const $ = (id) => document.getElementById(id);
 const money = (n) => "₦" + Number(n).toLocaleString();
-const ICONS = { Burgers: "🍔", Pizza: "🍕", Pasta: "", Main: "", Salads: "", Desserts: "🍰", Local: "", Drinks: "", Sides: "🍟" };
+const ICONS = { Burgers: "🍔", Pizza: "🍕", Pasta: "🍝", Main: "🍗", Salads: "🥗", Desserts: "🍰", Local: "🍲", Drinks: "🥤", Sides: "🍟" };
 
 function read(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }
@@ -59,6 +59,35 @@ document.body.insertAdjacentHTML("beforeend", `
     <div id="orders-list"></div>
   </aside>
 `);
+
+/* SCROLL ANIMATIONS (sections fade in as you reach them) */
+
+const REVEAL_SELECTOR = ".hero-content, .section-heading, .about-content, .faq-list details, .contact-section > *, .page-hero > *, .legal-card, .auth-card, .food-card:not(.skeleton-card)";
+let revealObserver = null;
+
+function revealOnScroll(root = document) {
+  if (!("IntersectionObserver" in window)) return;
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        revealObserver.unobserve(el);
+        el.classList.add("in-view");
+        setTimeout(() => { el.classList.remove("reveal", "in-view"); el.style.transitionDelay = ""; }, 1000);
+      });
+    }, { threshold: 0.12 });
+  }
+  root.querySelectorAll(REVEAL_SELECTOR).forEach((el, i) => {
+    if (el.dataset.revealed) return;
+    el.dataset.revealed = "1";
+    if (el.getBoundingClientRect().top < window.innerHeight) return;   // already on screen, no animation
+    el.style.transitionDelay = (i % 6) * 70 + "ms";
+    el.classList.add("reveal");
+    revealObserver.observe(el);
+  });
+}
 
 /* TOAST MESSAGES */
 
@@ -129,6 +158,7 @@ document.body.insertAdjacentHTML("beforeend", `
         <a href="menu.html">Full menu</a>
         <a href="reserve.html">Reserve a table</a>
         <a href="index.html#about">Our story</a>
+        <a href="index.html#faq">FAQ</a>
         <a href="index.html#contact">Contact</a>
       </div>
       <div>
@@ -215,6 +245,16 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDish(
 async function loadMenu() {
   const box = $("menu-container");
   if (!box) return;
+  box.innerHTML = Array.from({ length: 6 }, () => `
+    <article class="food-card skeleton-card">
+      <div class="sk sk-img"></div>
+      <div class="food-info"><div class="sk sk-line w60"></div><div class="sk sk-line"></div><div class="sk sk-line w40"></div></div>
+    </article>`).join("");
+  setTimeout(() => {
+    if (box.querySelector(".skeleton-card")) {
+      box.insertAdjacentHTML("afterbegin", '<p class="sk-note">Warming up the kitchen... the first visit can take up to a minute.</p>');
+    }
+  }, 6000);
   try {
     const response = await fetch(API + "/api/menu");
     menuItems = await response.json();
@@ -257,6 +297,7 @@ function displayMenu(list) {
       img.outerHTML = `<div class="food-emoji">${ICONS[img.dataset.cat] || "🍽"}</div>`;
     };
   });
+  revealOnScroll(box);
 }
 
 function renderFilters() {
@@ -512,3 +553,4 @@ loadMenu();
 
 updateOpenBadge();
 setInterval(updateOpenBadge, 60000);
+revealOnScroll();
