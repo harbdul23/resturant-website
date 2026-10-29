@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
 const path = require("path");
+const fs = require("fs");
 
 const db = require("./database");
 
@@ -24,6 +25,25 @@ app.use(cors());
 app.use(express.json());
 
 // Serves the website itself (index.html, menu.html, ...)
+const FRONTEND = path.join(__dirname, "../Frontend");
+const SITE_URL = (process.env.SITE_URL || "").replace(/\/+$/, "");   // optional: set to your own domain later
+
+// Fills in %SITE_URL% so share previews (WhatsApp, Facebook) get full web addresses
+app.use(async (req, res, next) => {
+    if (req.method !== "GET") return next();
+    const page = req.path === "/" ? "/index.html" : req.path;
+    if (!page.endsWith(".html")) return next();
+    const file = path.join(FRONTEND, page);
+    if (!file.startsWith(FRONTEND + path.sep)) return next();
+    try {
+        const html = await fs.promises.readFile(file, "utf8");
+        const site = SITE_URL || `${req.protocol}://${req.get("host")}`;
+        res.type("html").send(html.split("%SITE_URL%").join(site));
+    } catch (error) {
+        next();
+    }
+});
+
 app.use(express.static(path.join(__dirname, "../Frontend")));
 
 
@@ -373,7 +393,21 @@ app.use((req, res) => {
 
 /* START SERVER */
 
-app.listen(PORT, () => {
+app.listen(PORT, (error) => {
+    if (error) {
+        if (error.code === "EADDRINUSE") {
+            console.error(`
+  Port ${PORT} is already in use. An old copy of the server is still running.
+  Close it first: press Ctrl+C in the terminal where it runs, or run
+      taskkill /F /IM node.exe
+  then start the server again.
+`);
+        } else {
+            console.error(error);
+        }
+        process.exit(1);
+    }
+
     console.log(`
   🍽  SAVORA RESTAURANT
 
@@ -382,5 +416,7 @@ app.listen(PORT, () => {
 
   Menu API:
   http://localhost:${PORT}/api/menu
+
+  Admin dashboard: ${ADMIN_PASSWORD ? "UNLOCKED (password is set)" : "LOCKED (ADMIN_PASSWORD is not set)"}
   `);
 });

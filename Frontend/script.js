@@ -2,7 +2,7 @@ const API = ["5500", "5501"].includes(location.port) ? "http://localhost:5000" :
 const page = document.body.dataset.page;
 const $ = (id) => document.getElementById(id);
 const money = (n) => "₦" + Number(n).toLocaleString();
-const ICONS = { Burgers: "🍔", Pizza: "🍕", Pasta: "🍝", Main: "🍗", Salads: "🥗", Desserts: "🍰", Local: "🍲", Drinks: "🥤", Sides: "🍟" };
+const ICONS = { Burgers: "", Pizza: "🍕", Pasta: "🍝", Main: "🍗", Salads: "🥗", Desserts: "🍰", Local: "🍲", Drinks: "🥤", Sides: "🍟" };
 
 function read(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }

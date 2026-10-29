@@ -381,3 +381,14 @@ footer a { color: #aaa; text-decoration: none; }
 .faq-list details[open] summary::after { transform: rotate(45deg); }
 .faq-list details p { padding: 0 22px 20px; color: rgba(255, 255, 255, 0.78); line-height: 1.7; }
 .faq-list a { color: #ff9f43; }
+
+/* ===== fixes: Log in link on every page, buttons inside legal and 404 cards ===== */
+.nav-right { display: flex; gap: 10px; align-items: center; }
+.login-btn {
+    color: #fff; text-decoration: none; font-size: 14px; white-space: nowrap;
+    padding: 10px 15px; border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); transition: 0.3s;
+}
+.login-btn:hover { background: rgba(255, 255, 255, 0.2); }
+.legal-card a.primary-button { color: #000; }
+.legal-card a.secondary-button { color: #fff; }
