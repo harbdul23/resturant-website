@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose a new password | Savora Restaurant</title>
+    <meta name="robots" content="noindex">
+    <meta name="referrer" content="no-referrer">
+    <meta name="theme-color" content="#0c0c0c">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="glass.css">
+</head>
+<body>
+
+    <header class="navbar">
+        <a href="index.html" class="logo">SAVORA</a>
+        <nav class="nav-links">
+            <a href="index.html#home">Home</a>
+            <a href="menu.html">Menu</a>
+            <a href="reserve.html">Reserve</a>
+            <a href="index.html#about">About</a>
+            <a href="index.html#contact">Contact</a>
+        </nav>
+        <div class="nav-actions">
+            <span class="user-greet" id="user-greet"></span>
+            <a href="login.html#login" id="auth-link" class="auth-link">Log in</a>
+            <button class="cart-button" onclick="openCart()">
+                🛒 Cart <span id="cart-count">0</span>
+            </button>
+        </div>
+    </header>
+
+    <section class="auth-page">
+        <div class="auth-card">
+            <h2>Choose a new password</h2>
+            <p class="hint" id="r-hint">Pick a password with at least 6 characters.</p>
+
+            <form id="reset-form" onsubmit="sendReset(event)">
+                <label for="r-pass">New password</label>
+                <input id="r-pass" type="password" autocomplete="new-password" required>
+
+                <label for="r-pass2">Type it again</label>
+                <input id="r-pass2" type="password" autocomplete="new-password" required>
+
+                <label class="show-pw"><input type="checkbox" onchange="showPasswords(this.checked)"> Show passwords</label>
+
+                <p class="auth-error" id="r-error" role="alert"></p>
+                <button class="auth-submit" id="r-submit" type="submit">Save new password</button>
+            </form>
+
+            <div id="r-done" hidden>
+                <h3>Password changed</h3>
+                <p class="hint">You've been signed out everywhere. Log in with your new password.</p>
+                <a class="primary-button auth-go" href="login.html#login">Log in</a>
+            </div>
+
+            <p class="hint" id="r-again" hidden>Need a new link? <a href="forgot.html">Request one</a></p>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+    <script>
+        const resetToken = new URLSearchParams(location.search).get("token") || "";
+        history.replaceState(null, "", location.pathname);   // keep the code out of the address bar and history
+
+        if (!resetToken) {
+          $("reset-form").hidden = true;
+          $("r-hint").textContent = "This page needs the link we sent you. Please open the full link, or ask for a new one.";
+          $("r-again").hidden = false;
+        }
+
+        function showPasswords(on) {
+          $("r-pass").type = $("r-pass2").type = on ? "text" : "password";
+        }
+
+        async function sendReset(e) {
+          e.preventDefault();
+          $("r-error").textContent = "";
+          if ($("r-pass").value !== $("r-pass2").value) { $("r-error").textContent = "The two passwords don't match."; return; }
+          $("r-submit").disabled = true;
+          try {
+            const response = await fetch(API + "/api/auth/reset", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: resetToken, password: $("r-pass").value }),
+            });
+            const data = await response.json();
+            if (!response.ok) { $("r-error").textContent = data.error; $("r-again").hidden = false; return; }
+            try { localStorage.removeItem("savora_auth"); } catch (err) {}
+            $("reset-form").hidden = true;
+            $("r-done").hidden = false;
+          } catch (err) {
+            $("r-error").textContent = "Could not reach the server. Is it running?";
+          } finally {
+            $("r-submit").disabled = false;
+          }
+        }
+    </script>
+</body>
+</html>

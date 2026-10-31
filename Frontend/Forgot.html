@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot password | Savora Restaurant</title>
+    <meta name="robots" content="noindex">
+    <meta name="description" content="Reset your Savora Restaurant account password.">
+    <meta name="theme-color" content="#0c0c0c">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="glass.css">
+</head>
+<body>
+
+    <header class="navbar">
+        <a href="index.html" class="logo">SAVORA</a>
+        <nav class="nav-links">
+            <a href="index.html#home">Home</a>
+            <a href="menu.html">Menu</a>
+            <a href="reserve.html">Reserve</a>
+            <a href="index.html#about">About</a>
+            <a href="index.html#contact">Contact</a>
+        </nav>
+        <div class="nav-actions">
+            <span class="user-greet" id="user-greet"></span>
+            <a href="login.html#login" id="auth-link" class="auth-link">Log in</a>
+            <button class="cart-button" onclick="openCart()">
+                🛒 Cart <span id="cart-count">0</span>
+            </button>
+        </div>
+    </header>
+
+    <section class="auth-page">
+        <div class="auth-card">
+            <h2>Forgot your password?</h2>
+            <p class="hint">Enter the phone number or email on your account. We'll send a reset link to the phone number on the account, on WhatsApp.</p>
+
+            <form id="forgot-form" onsubmit="sendRequest(event)">
+                <label for="f-id">Phone number or email</label>
+                <input id="f-id" type="text" autocomplete="username" placeholder="e.g. +2348012345678" required>
+                <p class="auth-error" id="f-error" role="alert"></p>
+                <button class="auth-submit" id="f-submit" type="submit">Request reset link</button>
+            </form>
+
+            <div id="f-done" hidden>
+                <h3>Request sent</h3>
+                <p class="hint">If an account exists for that number or email, we've been told. We'll send a reset link on WhatsApp to the phone number on the account. You can speed things up by messaging us:</p>
+                <a class="wa-btn" id="f-wa" target="_blank" rel="noopener" href="#">Message us on WhatsApp</a>
+            </div>
+
+            <p class="hint">Remembered it? <a href="login.html#login">Log in</a></p>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+    <script>
+        async function sendRequest(e) {
+          e.preventDefault();
+          $("f-error").textContent = "";
+          $("f-submit").disabled = true;
+          const identifier = $("f-id").value.trim();
+          try {
+            const response = await fetch(API + "/api/auth/forgot", {
+              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier }),
+            });
+            const data = await response.json();
+            if (!response.ok) { $("f-error").textContent = data.error; return; }
+            $("forgot-form").hidden = true;
+            $("f-done").hidden = false;
+            $("f-wa").href = "https://wa.me/" + whatsappNumber + "?text=" +
+              encodeURIComponent("Hello Savora, I forgot my password. The phone number or email on my account is " + identifier + ". Please send me a reset link.");
+          } catch (err) {
+            $("f-error").textContent = "Could not reach the server. Is it running?";
+          } finally {
+            $("f-submit").disabled = false;
+          }
+        }
+    </script>
+</body>
+</html>

@@ -39,6 +39,9 @@
 
         <h2 class="admin-sub">Table reservations</h2>
         <div id="admin-res"></div>
+
+        <h2 class="admin-sub">Password reset requests</h2>
+        <div id="admin-resets"></div>
     </main>
 
 <script>
@@ -74,6 +77,7 @@ async function adminLogin() {
 
 function adminLogout() {
   try { sessionStorage.removeItem("savora_admin"); } catch (e) {}
+  Object.keys(resetLinks).forEach((k) => delete resetLinks[k]);
   token = null;
   clearInterval(timer);
   $("admin-board").hidden = true;
@@ -95,6 +99,7 @@ async function loadOrders() {
     if (response.status === 401) return adminLogout();
     renderOrders(await response.json());
     loadReservations();
+    loadResets();
   } catch (e) {
     $("admin-orders").innerHTML = "<p>Could not load orders. Is the server running?</p>";
   }
@@ -163,6 +168,79 @@ async function setResStatus(id, status) {
     });
     loadReservations();
   } catch (e) { alert("Could not update the reservation."); }
+}
+
+/* PASSWORD RESET REQUESTS */
+
+let resetList = [];
+const resetLinks = {};   // links just created, kept on screen until you leave this page
+
+const waNumber = (phone) => {
+  const d = String(phone).replace(/\D/g, "");
+  return d.startsWith("234") ? d : d.startsWith("0") ? "234" + d.slice(1) : d;
+};
+
+function linkBox(x) {
+  return `<div class="reset-link">
+    <p>Link ready. It works once and expires in 1 hour. Send it only to ${esc(x.phone)}.</p>
+    <input readonly value="${esc(x.link)}" onclick="this.select()">
+    <div class="status-row">
+      <a class="wa-btn" target="_blank" rel="noopener" href="${esc(x.wa)}">Send on WhatsApp</a>
+      <button onclick="copyLink(${x.id})">Copy link</button>
+    </div>
+  </div>`;
+}
+
+async function loadResets() {
+  try {
+    const response = await fetch(API + "/api/admin/resets", { headers: headers() });
+    if (response.status === 401) return adminLogout();
+    resetList = await response.json();
+    $("admin-resets").innerHTML = resetList.length === 0 ? "<p>No password reset requests.</p>" : resetList.map((r) => `
+      <div class="admin-order">
+        <div class="order-top">
+          <strong>${esc(r.name)}</strong>
+          <span class="order-status">${r.status === "link_sent" ? "link sent" : "waiting"}</span>
+        </div>
+        <small>${esc(r.phone)}${r.email ? " · " + esc(r.email) : ""} · asked ${new Date(r.requested_at.replace(" ", "T") + "Z").toLocaleString()}</small>
+        ${resetLinks[r.id] ? linkBox(resetLinks[r.id]) : ""}
+        <div class="status-row">
+          <button onclick="makeResetLink(${r.id})">${r.status === "link_sent" ? "Create a new link" : "Create reset link"}</button>
+          <button onclick="dismissReset(${r.id})">Dismiss</button>
+        </div>
+      </div>`).join("");
+  } catch (e) {}
+}
+
+async function makeResetLink(id) {
+  const r = resetList.find((x) => x.id === id);
+  if (!r) return;
+  try {
+    const response = await fetch(API + "/api/admin/resets/" + id + "/link", { method: "POST", headers: headers() });
+    if (response.status === 401) return adminLogout();
+    const data = await response.json();
+    if (!response.ok) { alert(data.error); return loadResets(); }
+    const link = (API || location.origin) + "/reset.html?token=" + data.token;
+    const message = `Hello ${r.name}, this is Savora Restaurant. Here is your password reset link: ${link}\n\nIt works once and expires in 1 hour. If you didn't ask for this, please ignore this message.`;
+    resetLinks[id] = { id, phone: r.phone, link, wa: "https://wa.me/" + waNumber(r.phone) + "?text=" + encodeURIComponent(message) };
+    loadResets();
+  } catch (e) { alert("Could not create the link."); }
+}
+
+function copyLink(id) {
+  const x = resetLinks[id];
+  if (!x) return;
+  if (navigator.clipboard) navigator.clipboard.writeText(x.link).then(() => alert("Link copied."), () => prompt("Copy this link:", x.link));
+  else prompt("Copy this link:", x.link);
+}
+
+async function dismissReset(id) {
+  if (!confirm("Dismiss this request? The customer will need to ask again.")) return;
+  try {
+    await fetch(API + "/api/admin/resets/" + id + "/dismiss", { method: "POST", headers: headers() });
+    delete resetLinks[id];
+    loadResets();
+  } catch (e) { alert("Could not dismiss it."); }
 }
 
 if (token) showBoard();

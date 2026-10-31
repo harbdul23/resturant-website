@@ -545,8 +545,7 @@ fetch(API + "/api/config")
   .then((c) => { deliveryFee = c.deliveryFee; whatsappNumber = c.whatsapp; if (c.hours) openHours = c.hours; renderCart(); updateOpenBadge(); })
   .catch(() => {});
 
-setupAuth();
-
+setupAuth()
 $("cart-count").textContent = cart.length;
 renderCart();
 loadMenu();

@@ -172,6 +172,62 @@ app.post("/api/auth/logout", (req, res) => {
 });
 
 
+/* FORGOT AND RESET PASSWORD
+   The customer asks, the owner sends a one-time link by WhatsApp to the phone number on the account. */
+
+const sha256 = (text) => crypto.createHash("sha256").update(text).digest("hex");
+
+app.post("/api/auth/forgot", (req, res) => {
+    if (tooManyAttempts(req)) return res.status(429).json({ error: "Too many attempts. Try again in 15 minutes." });
+
+    const ident = String(req.body.identifier || "").trim().toLowerCase().replace(/[\s-]/g, "");
+    if (!ident) return res.status(400).json({ error: "Please enter your phone number or email." });
+    const reply = () => res.json({ ok: true });      // same answer whether or not the account exists
+
+    db.get("SELECT id FROM users WHERE phone = ? OR email = ?", [ident, ident], (error, user) => {
+        if (error || !user) return reply();
+        db.get(
+            `SELECT id FROM password_resets
+             WHERE user_id = ? AND status IN ('requested', 'link_sent') AND requested_at > datetime('now', '-1 day')`,
+            [user.id],
+            (err, open) => {
+                if (err || open) return reply();
+                db.run("INSERT INTO password_resets (user_id) VALUES (?)", [user.id], () => reply());
+            }
+        );
+    });
+});
+
+app.post("/api/auth/reset", (req, res) => {
+    if (tooManyAttempts(req)) return res.status(429).json({ error: "Too many attempts. Try again in 15 minutes." });
+
+    const token = String(req.body.token || "");
+    const password = String(req.body.password || "");
+    const invalid = () => res.status(400).json({ error: "This reset link is invalid or has expired. Please ask for a new one." });
+
+    if (password.length < 6) return res.status(400).json({ error: "Your password needs at least 6 characters." });
+    if (!/^[a-f0-9]{48}$/.test(token)) return invalid();
+
+    db.get(
+        "SELECT id, user_id FROM password_resets WHERE token_hash = ? AND status = 'link_sent' AND expires_at > datetime('now')",
+        [sha256(token)],
+        (error, row) => {
+            if (error || !row) return invalid();
+            // claim the link first, so it can only ever be used once
+            db.run("UPDATE password_resets SET status = 'used', token_hash = NULL WHERE id = ? AND status = 'link_sent'", [row.id], function (claimError) {
+                if (claimError || this.changes !== 1) return invalid();
+                const { salt, hash } = hashPassword(password);
+                db.run("UPDATE users SET password_salt = ?, password_hash = ? WHERE id = ?", [salt, hash, row.user_id], (err) => {
+                    if (err) return res.status(500).json({ error: "Could not change your password. Please ask for a new link." });
+                    // sign the account out everywhere
+                    db.run("DELETE FROM sessions WHERE user_id = ?", [row.user_id], () => res.json({ ok: true }));
+                });
+            });
+        }
+    );
+});
+
+
 /* PLACE AN ORDER */
 
 app.post("/api/orders", (req, res) => {
@@ -315,6 +371,48 @@ app.post("/api/admin/orders/:id/status", (req, res) => {
         if (this.changes === 0) return res.status(404).json({ error: "Order not found." });
         res.json({ ok: true });
     });
+});
+
+
+/* ADMIN: PASSWORD RESET REQUESTS */
+
+app.get("/api/admin/resets", (req, res) => {
+    if (!isAdmin(req)) return res.status(401).json({ error: "Please log in again." });
+    db.all(
+        `SELECT r.id, r.status, r.requested_at, r.expires_at, u.name, u.phone, u.email
+         FROM password_resets r JOIN users u ON u.id = r.user_id
+         WHERE r.status IN ('requested', 'link_sent') AND r.requested_at > datetime('now', '-7 days')
+         ORDER BY r.id DESC LIMIT 100`,
+        [],
+        (error, rows) => {
+            if (error) return res.status(500).json({ error: "Could not load requests" });
+            res.json(rows);
+        }
+    );
+});
+
+app.post("/api/admin/resets/:id/link", (req, res) => {
+    if (!isAdmin(req)) return res.status(401).json({ error: "Please log in again." });
+    const token = crypto.randomBytes(24).toString("hex");
+    db.run(
+        `UPDATE password_resets SET token_hash = ?, status = 'link_sent', expires_at = datetime('now', '+1 hour')
+         WHERE id = ? AND status IN ('requested', 'link_sent')`,
+        [sha256(token), req.params.id],
+        function (error) {
+            if (error) return res.status(500).json({ error: "Could not create the link." });
+            if (this.changes === 0) return res.status(404).json({ error: "That request is no longer open." });
+            res.json({ token });
+        }
+    );
+});
+
+app.post("/api/admin/resets/:id/dismiss", (req, res) => {
+    if (!isAdmin(req)) return res.status(401).json({ error: "Please log in again." });
+    db.run(
+        "UPDATE password_resets SET status = 'dismissed', token_hash = NULL WHERE id = ? AND status IN ('requested', 'link_sent')",
+        [req.params.id],
+        (error) => (error ? res.status(500).json({ error: "Could not dismiss it." }) : res.json({ ok: true }))
+    );
 });
 
 

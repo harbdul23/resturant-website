@@ -392,3 +392,24 @@ footer a { color: #aaa; text-decoration: none; }
 .login-btn:hover { background: rgba(255, 255, 255, 0.2); }
 .legal-card a.primary-button { color: #000; }
 .legal-card a.secondary-button { color: #fff; }
+
+/* ===== forgot / reset password ===== */
+.forgot-row { text-align: right; margin: 10px 0 4px; }
+.forgot-row a { color: #ff9f43; font-size: 14px; text-decoration: none; }
+.forgot-row a:hover { text-decoration: underline; }
+.auth-card .hint a { color: #ff9f43; }
+.auth-card .wa-btn { margin: 14px 0; }
+.show-pw { display: flex !important; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.auth-card a.auth-go { display: inline-block; margin-top: 10px; color: #000; text-decoration: none; }
+
+.reset-link { margin: 12px 0 4px; padding: 14px; border-radius: 14px; border: 1px solid rgba(60, 200, 120, 0.4); background: rgba(60, 200, 120, 0.1); }
+.reset-link p { color: #9ff0c3; font-size: 14px; margin-bottom: 8px; }
+.reset-link input {
+    width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 13px; color: #fff; outline: none;
+    border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.1);
+}
+.status-row .wa-btn { margin-top: 0; padding: 8px 16px; }
+
+/* admin: readable WhatsApp button, normal capitals on action buttons */
+.admin-order a.wa-btn { color: #04210f; text-decoration: none; }
+.admin-top button, #admin-resets .status-row button, .reset-link button { text-transform: none; }

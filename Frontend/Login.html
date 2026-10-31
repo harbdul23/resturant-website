@@ -80,6 +80,8 @@
                     <button type="button" class="eye">Show</button>
                 </div>
 
+                <p class="forgot-row"><a href="forgot.html">Forgot password?</a></p>
+
                 <button class="auth-submit" type="submit">Log in</button>
             </form>
 
@@ -100,6 +102,14 @@
             $("auth-error").textContent = "";
         }
         tabs.forEach((t) => (t.onclick = () => switchTab(t.dataset.tab)));
+
+        // The "Log in" links in the navbar end in #login, so open that tab when the address says so
+        function openTabFromAddress() {
+            if (location.hash === "#login") switchTab("login");
+            else if (location.hash === "#register") switchTab("register");
+        }
+        openTabFromAddress();
+        window.addEventListener("hashchange", openTabFromAddress);
 
         document.querySelectorAll(".eye").forEach((b) => {
             b.onclick = () => {

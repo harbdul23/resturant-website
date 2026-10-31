@@ -93,9 +93,9 @@ function insertInitialMenu(done) {
 function insertExtraMenu() {
     const extras = [
         ["Jollof Rice & Chicken", "Smoky party jollof rice served with grilled chicken and fried plantain.", 6000, "Local", ""],
-        ["Pounded Yam & Egusi", "Soft pounded yam with rich egusi soup and assorted meat.", 7500, "Local", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQREtnX169EdW2Jb8HPajwUU4l3w-uMHLMKAa-VaXcyAw&s=10"],
+        ["Pounded Yam & Egusi", "Soft pounded yam with rich egusi soup and assorted meat.", 7500, "Local", ""],
         ["Asun Peppered Goat", "Spicy grilled goat meat tossed with onions and peppers.", 6500, "Local", ""],
-        ["Suya Platter", "Thinly sliced beef suya with yaji spice, onions and tomatoes.", 5000, "Local", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaAFoqe7eyWLtyx7SXHo8UGOs67E5KMpLeF_4qoUFu4w&s=10"],
+        ["Suya Platter", "Thinly sliced beef suya with yaji spice, onions and tomatoes.", 5000, "Local", ""],
         ["Chapman", "Chilled citrus and cucumber drink, served over ice.", 2500, "Drinks", ""],
         ["Fresh Fruit Smoothie", "Blended seasonal fruits, served cold.", 3000, "Drinks", ""],
         ["Zobo Drink", "Chilled hibiscus drink with ginger and pineapple.", 1500, "Drinks", ""],
@@ -162,6 +162,19 @@ db.run(`
         token TEXT PRIMARY KEY,
         user_id INTEGER NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+
+/* PASSWORD RESET REQUESTS (the link itself is never stored, only a scrambled copy) */
+
+db.run(`
+    CREATE TABLE IF NOT EXISTS password_resets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        token_hash TEXT,
+        status TEXT DEFAULT 'requested',
+        requested_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        expires_at TEXT
     )
 `);
 
